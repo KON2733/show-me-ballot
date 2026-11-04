@@ -35,6 +35,58 @@ const AT_LARGE_DISTRICTS = ["1st At-Large", "2nd At-Large", "3rd At-Large"];
 const COUNTIES = {
   "Jackson County": [
     {
+      office: "Missouri State Auditor",
+      appliesTo: "statewide",
+      candidates: [
+        {
+          name: "Scott Fitzpatrick",
+          party: "Republican",
+          incumbent: true,
+          headline:
+            "Incumbent auditor (since 2023) seeking a second term; previously six years in the state House and four as State Treasurer.",
+          supports: [
+            "Fighting waste and fraud in state and local government",
+            "Blocking taxpayer funding for people in the country illegally",
+            "Auditing school districts on cost and performance, including spending compared to outcomes",
+            "Auditing school curriculum, including scrutiny of material he describes as politically divisive (e.g. Critical Race Theory) or related to gender/sexual orientation",
+            "Limiting corruption in local government",
+          ],
+          opposes: [],
+          website: "https://www.scottfitzpatrick.com",
+          impact:
+            "The State Auditor reviews how state and local government agencies — including school districts — spend taxpayer money. Fitzpatrick has said he'd use that authority to review school curriculum content in addition to standard financial audits, which is a more expansive use of the office than auditors have typically pursued.",
+        },
+        {
+          name: "Quentin Wilson",
+          party: "Democratic",
+          incumbent: false,
+          headline:
+            "Former director of the Missouri Department of Revenue and the Missouri Department of Higher Education; has also worked in St. Louis County government and for members of Congress.",
+          supports: [
+            "More transparency between voters and the auditor's office",
+            "Creating a state government accountability office",
+            "Partnerships between the auditor's office and universities, nonprofits, businesses, and local governments",
+          ],
+          opposes: [],
+          website: "https://quentin4mo.com",
+          impact:
+            "Wilson frames his campaign around government efficiency and accountability generally, pointing to his experience across several state and local agencies, rather than specific criticisms of the incumbent's record.",
+        },
+        {
+          name: "Dustin Coffell",
+          party: "Libertarian",
+          incumbent: false,
+          headline:
+            "Chair of the Libertarian Party of Missouri; ran unopposed for the Libertarian nomination.",
+          supports: [],
+          opposes: [],
+          website: "",
+          impact:
+            "Little public information is available on Coffell's specific plans for the office — check his campaign's social media or the Libertarian Party of Missouri for updates before voting.",
+        },
+      ],
+    },
+    {
       office: "Jackson County Executive",
       appliesTo: "countywide",
       candidates: [
@@ -117,6 +169,30 @@ const COUNTIES = {
           website: "https://www.kellythompsonforjacksoncounty.com",
           impact:
             "The 1st District covers south Kansas City, from State Line to Troost Avenue and from the Martin City area to the Missouri River. Because Thompson is unopposed, she is effectively already your next 1st District legislator, replacing outgoing legislator Manny Abarca, who left the seat open to run for County Executive.",
+        },
+      ],
+    },
+    {
+      office: "Missouri House of Representatives — District 26",
+      appliesTo: "State House District 26",
+      candidates: [
+        {
+          name: "Tiffany Price",
+          party: "Democratic",
+          incumbent: true,
+          headline:
+            "First-term incumbent (elected 2024); Navy veteran, nonprofit founder, and mother of four; running unopposed (no Republican or Libertarian filed).",
+          supports: [
+            "Equal educational opportunities for urban and suburban students alike, and support for parents choosing where their kids attend school",
+            "Better working conditions and support for teachers",
+            "Holding health insurers accountable for covering mental health care, and attracting more mental health providers to practice in Missouri",
+            "Addressing crime by investing in struggling communities — job training, transportation, child care, and mental health services",
+            "Banning minors from possessing guns, and red flag laws",
+          ],
+          opposes: [],
+          website: "",
+          impact:
+            "District 26 covers Kansas City's southeast side. Because Price is unopposed, she is effectively already your next District 26 representative. Missouri House seats are 2-year terms, so this race, unlike the state Senate seat below, is on every even-numbered-year ballot.",
         },
       ],
     },
@@ -262,15 +338,15 @@ function TabButton({ active, label, icon, onClick, color, divider }) {
             flexDirection: "column",
             alignItems: "center",
             gap: 3,
-            padding: "7px 16px 9px",
-            borderRadius: 18,
+            padding: "7px 6px 9px",
+            borderRadius: 16,
             background: active ? `${color}22` : "transparent",
             transition: "background 0.15s ease",
           }}
         >
           <span
             style={{
-              fontSize: 36,
+              fontSize: 26,
               lineHeight: 1,
               filter: active ? "none" : "grayscale(0.25) opacity(0.75)",
               transform: active ? "scale(1.08)" : "scale(1)",
@@ -282,7 +358,7 @@ function TabButton({ active, label, icon, onClick, color, divider }) {
           <span
             style={{
               fontFamily: "'Inter', sans-serif",
-              fontSize: 17,
+              fontSize: 12.5,
               fontWeight: active ? 800 : 600,
               color: active ? color : "#8A93A3",
               letterSpacing: 0.1,
@@ -301,6 +377,8 @@ function App() {
   const [county, setCounty] = useState("Jackson County");
   const [myIndividualDistrict, setMyIndividualDistrict] = useState(null);
   const [myAtLargeDistrict, setMyAtLargeDistrict] = useState(null);
+  const [myStateHouseDistrict, setMyStateHouseDistrict] = useState(null);
+  const [myStateSenateDistrict, setMyStateSenateDistrict] = useState(null);
   const [detail, setDetail] = useState(null);
   const [saved, setSaved] = useState([]);
 
@@ -371,6 +449,7 @@ function App() {
       {/* Content */}
       <div style={{ flex: 1, padding: "18px 16px 122px", overflowY: "auto" }}>
         {tab === "register" && <RegisterScreen />}
+        {tab === "learn" && <LearnScreen />}
         {tab === "candidates" && !detail && (
           <CandidatesScreen
             county={county}
@@ -383,6 +462,10 @@ function App() {
             setMyIndividualDistrict={setMyIndividualDistrict}
             myAtLargeDistrict={myAtLargeDistrict}
             setMyAtLargeDistrict={setMyAtLargeDistrict}
+            myStateHouseDistrict={myStateHouseDistrict}
+            setMyStateHouseDistrict={setMyStateHouseDistrict}
+            myStateSenateDistrict={myStateSenateDistrict}
+            setMyStateSenateDistrict={setMyStateSenateDistrict}
           />
         )}
         {tab === "candidates" && detail && (
@@ -419,6 +502,14 @@ function App() {
           onClick={() => setTab("register")}
         />
         <TabButton
+          icon="📚"
+          label="Learn"
+          color="#3E8F63"
+          divider
+          active={tab === "learn"}
+          onClick={() => setTab("learn")}
+        />
+        <TabButton
           icon="📋"
           label="Candidates"
           color="#2F8F8A"
@@ -438,6 +529,209 @@ function App() {
           onClick={() => setTab("saved")}
         />
       </div>
+    </div>
+  );
+}
+
+const ELECTIONS_GUIDE = [
+  {
+    level: "Federal",
+    icon: "🏛️",
+    color: "#D2593F",
+    intro:
+      "The U.S. government — things that affect the whole country, from foreign policy to federal taxes.",
+    onBallot: [
+      {
+        office: "U.S. House of Representatives",
+        term: "2-year term",
+        note:
+          "The only federal race on your ballot this year — all 435 House seats are up every 2 years. Missouri just redrew its congressional district lines mid-decade (unusual — normally only happens once a decade), splitting Jackson County between multiple districts. It's being challenged in court, so which district you're in could still shift before Election Day.",
+      },
+    ],
+    notOnBallot: [
+      {
+        office: "U.S. Senate",
+        note: "6-year terms, staggered. Missouri's two seats aren't up again until 2028 and 2030.",
+      },
+      {
+        office: "President & Vice President",
+        note: "Every 4 years only. 2024 was the last one, 2028 is next.",
+      },
+    ],
+  },
+  {
+    level: "State",
+    icon: "🏢",
+    color: "#2F8F8A",
+    intro: "Missouri state government — state laws, taxes, schools funding, and more.",
+    onBallot: [
+      {
+        office: "Missouri House of Representatives",
+        term: "2-year term",
+        note: "All 163 seats are up every 2 years, so yes, this cycle.",
+      },
+      {
+        office: "Missouri Senate",
+        term: "4-year term",
+        note:
+          "Staggered terms — only about half the seats are up each cycle. Jackson County has one seat (District 8) on the ballot this year.",
+      },
+      {
+        office: "State Auditor",
+        term: "4-year term",
+        note: "The one statewide executive office up this cycle.",
+      },
+      {
+        office: "Statewide ballot measures",
+        note:
+          "Missouri sometimes puts constitutional amendments directly to voters. One this cycle asks whether charter counties, Jackson County included, should be required to elect their property assessor instead of appointing one.",
+      },
+    ],
+    notOnBallot: [
+      {
+        office: "Governor & Lieutenant Governor",
+        note: "4-year terms, elected together. Last was 2024, next is 2028.",
+      },
+      {
+        office: "Secretary of State, Attorney General, State Treasurer",
+        note: "All run on the same 4-year cycle as Governor — not this year.",
+      },
+    ],
+  },
+  {
+    level: "County",
+    icon: "🌾",
+    color: "#E8A93B",
+    intro: "Jackson County government — this is what the Candidates tab covers in detail.",
+    onBallot: [
+      { office: "County Executive", term: "4-year term", note: "Countywide — everyone votes on this one." },
+      {
+        office: "County Legislature",
+        term: "4-year term",
+        note:
+          "You vote on two seats: your individual district (1st–6th) and your at-large district (1st–3rd At-Large).",
+      },
+    ],
+    notOnBallot: [
+      {
+        office: "County Assessor, Treasurer, and most other county offices",
+        note:
+          "Jackson County is a \"charter county,\" so most department heads are appointed rather than elected — that's exactly what the statewide assessor ballot measure above would change.",
+      },
+    ],
+  },
+  {
+    level: "City & local",
+    icon: "🏙️",
+    color: "#3E8F63",
+    intro:
+      "Kansas City (or Independence, Lee's Summit, Blue Springs, etc.) and school boards — but on a different calendar.",
+    onBallot: [],
+    notOnBallot: [
+      {
+        office: "Mayor & City Council",
+        note:
+          "Elected in separate spring municipal elections (typically April), not the November federal/state/county cycle. Won't appear on this ballot.",
+      },
+      {
+        office: "School boards & special districts",
+        note: "Also spring elections, separate from this ballot.",
+      },
+    ],
+  },
+  {
+    level: "Judicial",
+    icon: "⚖️",
+    color: "#8A93A3",
+    intro: "Jackson County judges — but it doesn't work like the other races.",
+    onBallot: [
+      {
+        office: "Judicial retention votes",
+        note:
+          "Missouri's \"Nonpartisan Court Plan\" means most Jackson County judges are appointed first, then periodically face a simple yes/no \"should this judge be retained?\" vote — not a race against an opponent. These sometimes appear on the November ballot.",
+      },
+    ],
+    notOnBallot: [],
+  },
+];
+
+function LearnScreen() {
+  return (
+    <div>
+      <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 16 }}>
+        Not every level of government is on your ballot every year. Here's what you're actually
+        eligible to vote on this November as a Jackson County resident — and what's elected on a
+        different cycle, so you're not caught off guard looking for it.
+      </div>
+
+      {ELECTIONS_GUIDE.map((section) => (
+        <Card key={section.level} accent={section.color} style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 22 }}>{section.icon}</span>
+            <span style={{ fontWeight: 700, fontSize: 16 }}>{section.level}</span>
+          </div>
+          <div style={{ fontSize: 13, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 12 }}>
+            {section.intro}
+          </div>
+
+          {section.onBallot.length > 0 && (
+            <div style={{ marginBottom: section.notOnBallot.length > 0 ? 12 : 0 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                  color: section.color,
+                  marginBottom: 6,
+                }}
+              >
+                On your ballot this year
+              </div>
+              {section.onBallot.map((item) => (
+                <div key={item.office} style={{ marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13.5, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                    {item.office}
+                    {item.term && (
+                      <span style={{ fontWeight: 600, fontSize: 11, color: "#A9B0BE" }}>
+                        · {item.term}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12.5, color: "#4E5A6C", lineHeight: 1.5, marginTop: 2 }}>
+                    {item.note}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {section.notOnBallot.length > 0 && (
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                  color: "#A9B0BE",
+                  marginBottom: 6,
+                }}
+              >
+                Not this year
+              </div>
+              {section.notOnBallot.map((item) => (
+                <div key={item.office} style={{ marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13.5, color: "#8A93A3" }}>{item.office}</div>
+                  <div style={{ fontSize: 12.5, color: "#A9B0BE", lineHeight: 1.5, marginTop: 2 }}>
+                    {item.note}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      ))}
     </div>
   );
 }
@@ -554,18 +848,80 @@ function RegisterScreen() {
   );
 }
 
+function pointInRing(lon, lat, ring) {
+  // Ray-casting algorithm, ring is [[lon,lat], ...]
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect =
+      yi > lat !== yj > lat &&
+      lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function findDistrictsFromCoords(lat, lon) {
+  const individual = DISTRICT_BOUNDARIES.individual.find((d) =>
+    pointInRing(lon, lat, d.ring)
+  );
+  const atLarge = DISTRICT_BOUNDARIES.atLarge.find((d) =>
+    pointInRing(lon, lat, d.ring)
+  );
+  return {
+    individual: individual ? individual.label : null,
+    atLarge: atLarge ? atLarge.label : null,
+  };
+}
+
+function pointInRing(lon, lat, ring) {
+  // Kept for potential future use if this ever runs somewhere that can get
+  // real coordinates (a real deployed site, not a Claude artifact — see
+  // README/chat notes on why device geolocation and address geocoding
+  // can't run inside this sandbox).
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect =
+      yi > lat !== yj > lat &&
+      lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function findDistrictsFromCoords(lat, lon) {
+  const individual = DISTRICT_BOUNDARIES.individual.find((d) =>
+    pointInRing(lon, lat, d.ring)
+  );
+  const atLarge = DISTRICT_BOUNDARIES.atLarge.find((d) =>
+    pointInRing(lon, lat, d.ring)
+  );
+  return {
+    individual: individual ? individual.label : null,
+    atLarge: atLarge ? atLarge.label : null,
+  };
+}
+
 function DistrictFinder({
   myIndividualDistrict,
   setMyIndividualDistrict,
   myAtLargeDistrict,
   setMyAtLargeDistrict,
+  myStateHouseDistrict,
+  setMyStateHouseDistrict,
+  myStateSenateDistrict,
+  setMyStateSenateDistrict,
 }) {
   const [address, setAddress] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | error | outside
   const [errorMsg, setErrorMsg] = useState("");
   const [matchedAddress, setMatchedAddress] = useState("");
 
-  const bothConfirmed = myIndividualDistrict && myAtLargeDistrict;
+  const hasAnyResult =
+    myIndividualDistrict || myAtLargeDistrict || myStateHouseDistrict || myStateSenateDistrict;
 
   const findDistricts = async () => {
     if (!address.trim()) return;
@@ -583,13 +939,20 @@ function DistrictFinder({
         return;
       }
 
-      if (!data.individualDistrict || !data.atLargeDistrict) {
+      if (
+        !data.individualDistrict &&
+        !data.atLargeDistrict &&
+        !data.stateHouseDistrict &&
+        !data.stateSenateDistrict
+      ) {
         setStatus("outside");
         return;
       }
 
-      setMyIndividualDistrict(data.individualDistrict);
-      setMyAtLargeDistrict(data.atLargeDistrict);
+      setMyIndividualDistrict(data.individualDistrict || null);
+      setMyAtLargeDistrict(data.atLargeDistrict || null);
+      setMyStateHouseDistrict(data.stateHouseDistrict || null);
+      setMyStateSenateDistrict(data.stateSenateDistrict || null);
       setMatchedAddress(data.matchedAddress || "");
       setStatus("idle");
     } catch (e) {
@@ -601,6 +964,8 @@ function DistrictFinder({
   const reset = () => {
     setMyIndividualDistrict(null);
     setMyAtLargeDistrict(null);
+    setMyStateHouseDistrict(null);
+    setMyStateSenateDistrict(null);
     setStatus("idle");
     setAddress("");
     setMatchedAddress("");
@@ -609,26 +974,63 @@ function DistrictFinder({
   return (
     <Card accent="#E8734A" style={{ marginBottom: 18 }}>
       <div style={{ fontWeight: 700, fontSize: 15.5, marginBottom: 4 }}>
-        {bothConfirmed ? "Your districts" : "Find your districts"}
+        {hasAnyResult ? "Your districts" : "Find your districts"}
       </div>
 
-      {bothConfirmed ? (
+      {hasAnyResult ? (
         <div>
           {matchedAddress && (
             <div style={{ fontSize: 12, color: "#8A93A3", marginTop: 4, marginBottom: 8 }}>
               Matched: {matchedAddress}
             </div>
           )}
-          <div style={{ fontSize: 12.5, color: "#8A93A3", marginTop: 6, marginBottom: 3 }}>
-            Individual district
+
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#E8A93B", marginTop: 8, marginBottom: 6 }}>
+            County
           </div>
+          <div style={{ fontSize: 12.5, color: "#8A93A3", marginBottom: 3 }}>Individual district</div>
           <div style={{ marginBottom: 8 }}>
-            <Pill tone="b">{myIndividualDistrict}</Pill>
+            {myIndividualDistrict ? (
+              <Pill tone="b">{myIndividualDistrict}</Pill>
+            ) : (
+              <span style={{ fontSize: 12.5, color: "#A9B0BE" }}>Not found</span>
+            )}
           </div>
           <div style={{ fontSize: 12.5, color: "#8A93A3", marginBottom: 3 }}>At-large district</div>
-          <div style={{ marginBottom: 10 }}>
-            <Pill tone="a">{myAtLargeDistrict}</Pill>
+          <div style={{ marginBottom: 14 }}>
+            {myAtLargeDistrict ? (
+              <Pill tone="a">{myAtLargeDistrict}</Pill>
+            ) : (
+              <span style={{ fontSize: 12.5, color: "#A9B0BE" }}>Not found</span>
+            )}
           </div>
+
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#2F8F8A", marginBottom: 6 }}>
+            State
+          </div>
+          <div style={{ fontSize: 12.5, color: "#8A93A3", marginBottom: 3 }}>Missouri House district</div>
+          <div style={{ marginBottom: 8 }}>
+            {myStateHouseDistrict ? (
+              <Pill tone="b">{myStateHouseDistrict}</Pill>
+            ) : (
+              <span style={{ fontSize: 12.5, color: "#A9B0BE" }}>Not found</span>
+            )}
+          </div>
+          <div style={{ fontSize: 12.5, color: "#8A93A3", marginBottom: 3 }}>Missouri Senate district</div>
+          <div style={{ marginBottom: 8 }}>
+            {myStateSenateDistrict ? (
+              <Pill tone="a">{myStateSenateDistrict}</Pill>
+            ) : (
+              <span style={{ fontSize: 12.5, color: "#A9B0BE" }}>Not found</span>
+            )}
+          </div>
+          {(myStateHouseDistrict || myStateSenateDistrict) && (
+            <div style={{ fontSize: 11.5, color: "#A9B0BE", marginBottom: 10, lineHeight: 1.4 }}>
+              Candidate info for Missouri House/Senate races is coming soon — for now this just
+              confirms which districts you're in.
+            </div>
+          )}
+
           <button
             onClick={reset}
             style={{
@@ -708,16 +1110,36 @@ function CandidatesScreen({
   setMyIndividualDistrict,
   myAtLargeDistrict,
   setMyAtLargeDistrict,
+  myStateHouseDistrict,
+  setMyStateHouseDistrict,
+  myStateSenateDistrict,
+  setMyStateSenateDistrict,
 }) {
-  const confirmedDistricts = [myIndividualDistrict, myAtLargeDistrict].filter(Boolean);
+  const confirmedDistricts = [
+    myIndividualDistrict,
+    myAtLargeDistrict,
+    myStateHouseDistrict,
+    myStateSenateDistrict,
+  ].filter(Boolean);
   const visibleRaces = races.filter(
     (r) =>
       r.appliesTo === "countywide" ||
+      r.appliesTo === "statewide" ||
       confirmedDistricts.length === 0 ||
       confirmedDistricts.includes(r.appliesTo)
   );
+  // Districts with no race loaded because the seat genuinely isn't on this
+  // year's ballot (e.g. a state Senate seat not up this cycle) — distinct
+  // from a district we just haven't researched yet.
+  const NOT_ON_BALLOT_THIS_CYCLE = {
+    "State Senate District 7": "Senate seats are staggered 4-year terms, and this one isn't up again until 2028.",
+  };
+
   const missingDistricts = confirmedDistricts.filter(
-    (d) => !races.some((r) => r.appliesTo === d)
+    (d) => !races.some((r) => r.appliesTo === d) && !NOT_ON_BALLOT_THIS_CYCLE[d]
+  );
+  const notOnBallotDistricts = confirmedDistricts.filter(
+    (d) => !races.some((r) => r.appliesTo === d) && NOT_ON_BALLOT_THIS_CYCLE[d]
   );
 
   return (
@@ -727,6 +1149,10 @@ function CandidatesScreen({
         setMyIndividualDistrict={setMyIndividualDistrict}
         myAtLargeDistrict={myAtLargeDistrict}
         setMyAtLargeDistrict={setMyAtLargeDistrict}
+        myStateHouseDistrict={myStateHouseDistrict}
+        setMyStateHouseDistrict={setMyStateHouseDistrict}
+        myStateSenateDistrict={myStateSenateDistrict}
+        setMyStateSenateDistrict={setMyStateSenateDistrict}
       />
 
       <div
@@ -744,9 +1170,10 @@ function CandidatesScreen({
       >
         <span>💡</span>
         <span>
-          Real Nov 3, 2026 general election candidates for your ballot, based on county election
-          board and local news reporting as of Aug 2026. Positions may evolve as the campaign
-          continues — verify anything critical with the candidate's own site before voting.
+          Real Nov 3, 2026 general election candidates for your ballot, based on county/state
+          election board records and local news reporting as of Oct 2026. Positions may evolve as
+          the campaign continues — verify anything critical with the candidate's own site before
+          voting.
         </span>
       </div>
 
@@ -765,6 +1192,22 @@ function CandidatesScreen({
           yet — showing what we have. Let me know that district's candidates and I can add them.
         </div>
       )}
+
+      {notOnBallotDistricts.map((d) => (
+        <div
+          key={d}
+          style={{
+            fontSize: 12.5,
+            background: "#F1ECDF",
+            borderRadius: 14,
+            padding: "10px 14px",
+            marginBottom: 18,
+            color: "#56657A",
+          }}
+        >
+          Your {d} isn't on this year's ballot — {NOT_ON_BALLOT_THIS_CYCLE[d]}
+        </div>
+      ))}
 
       {visibleRaces.map((race, i) => (
         <div key={i} style={{ marginBottom: 22 }}>
@@ -910,9 +1353,25 @@ function CandidateDetail({ candidate: c, saved, onSave, onBack }) {
         <div style={{ fontSize: 14, marginTop: 12, opacity: 0.92 }}>{c.headline}</div>
       </div>
 
-      <PositionList title="STATED SUPPORT" items={c.supports} tone="for" />
+      {c.supports && c.supports.length > 0 && (
+        <PositionList title="STATED SUPPORT" items={c.supports} tone="for" />
+      )}
       {c.opposes && c.opposes.length > 0 && (
         <PositionList title="STATED OPPOSITION" items={c.opposes} tone="against" />
+      )}
+      {(!c.supports || c.supports.length === 0) && (!c.opposes || c.opposes.length === 0) && (
+        <div
+          style={{
+            fontSize: 12.5,
+            color: "#8A93A3",
+            background: "#F1ECDF",
+            borderRadius: 14,
+            padding: "12px 14px",
+            marginBottom: 14,
+          }}
+        >
+          No specific stated positions found yet for this candidate — see the note below.
+        </div>
       )}
 
       <div
