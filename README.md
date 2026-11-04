@@ -14,13 +14,16 @@ Node process on your own machine has no such restriction.
 
 ```
 jackson-district-app/
-  server.js            — Express server: serves the frontend + the API
-  geocode.js            — address -> lat/lon (Census Bureau, free, no API key)
-  district-lookup.js    — lat/lon -> district (point-in-polygon over the real boundary files)
-  districts.js          — combines the two, plus the name -> district-label translation
+  server.js             — Express server: serves the frontend + the API
+  geocode.js             — address -> lat/lon (Census Bureau, free, no API key)
+  district-lookup.js     — lat/lon -> district (point-in-polygon over the real boundary files)
+  districts.js           — combines the two, for all four boundary layers below
+  state-legislators.js   — Missouri House/Senate name -> district-number translation
   boundaries/
-    individual-districts.geojson
-    at-large-districts.geojson
+    individual-districts.geojson      — Jackson County Legislature (individual seats)
+    at-large-districts.geojson        — Jackson County Legislature (at-large seats)
+    state-house-districts.geojson     — Missouri House of Representatives
+    state-senate-districts.geojson    — Missouri Senate
   public/
     index.html           — loads React from a CDN, no build step
     app.jsx               — the app itself (screens, candidate data, styling)
@@ -59,9 +62,12 @@ Show-Me Ballot running at http://localhost:3000
 ```
 
 Open that URL in a browser. Type an address like `8640 Holmes Rd, Kansas
-City, MO 64131`, hit **Find my districts**, and it should resolve straight
-to the two districts and show the candidates — the whole thing happens
-server-side, the browser never talks to Census directly.
+City, MO 64131`, hit **Find my districts**, and it should resolve to your
+county legislature districts AND your Missouri House and Senate districts
+in one go — the whole thing happens server-side, the browser never talks
+to Census directly. (Candidate info for the state House/Senate races
+isn't loaded into the app yet — it currently just confirms which
+districts you're in. See the limitations section below.)
 
 ## 4. If something goes wrong
 
@@ -79,19 +85,33 @@ server-side, the browser never talks to Census directly.
 
 ## 5. Known limitations worth knowing about
 
-- **District labels will go stale after the Nov 3, 2026 election.** The
-  boundary files only contain the *current* (pre-election) legislator's
-  name, not a district number — `districts.js` translates that into "1st
-  District" etc. using a lookup table built from the current roster. Once
-  new legislators are seated, that table needs updating with their names
+- **District labels will go stale after the Nov 3, 2026 election.** All
+  four boundary files only contain the *current* (pre-election)
+  officeholder's name, not a district number — `districts.js` and
+  `state-legislators.js` translate that into "1st District" / "State
+  House District 26" etc. using lookup tables built from the current
+  rosters. Once new officeholders are seated, those tables need updating
   (the district boundaries themselves don't change, just who's listed).
-- **Candidate data only covers 3 races right now**: County Executive,
-  1st District, and 3rd At-Large — those are the only ones with candidate
-  data loaded in `public/app.jsx` (`COUNTIES` near the top of the file).
-  The other 4 individual districts and 2 at-large districts will show
-  "no candidate data loaded yet" until that's filled in.
-- **This only knows Jackson County.** An address outside it will
-  correctly report "outside the district boundaries we have on file."
+- **Five state seats are listed under a departed officeholder's name**
+  because Missouri's GIS data wasn't refreshed after they left: House
+  District 110 (Justin Sparks resigned Nov 2025), House District 114
+  (Ken Waller died in office Aug 2025), House District 149 (Donnie Brown
+  resigned Aug 2025), House District 160 (Ben Baker left office May
+  2025), and Senate District 10 (Travis Fitzwater resigned May 2026). The
+  app will still correctly show the right district number for an address
+  in one of these — it's only the underlying GIS data's officeholder name
+  that's out of date, which `state-legislators.js` already accounts for.
+- **Candidate data only covers 3 county races right now**: County
+  Executive, 1st District, and 3rd At-Large — those are the only ones
+  with candidate data loaded in `public/app.jsx` (`COUNTIES` near the top
+  of the file). The other 4 county individual districts, 2 county
+  at-large districts, and all Missouri House/Senate races will show "no
+  candidate data loaded yet" (county) or just confirm the district number
+  with no candidates yet (state) until that's filled in.
+- **This only knows Jackson County** for the two county layers — an
+  address outside it will correctly show "Not found" for those two, while
+  still resolving the state House/Senate districts if the address is
+  anywhere in Missouri.
 
 ## 6. If you want this on the actual internet later
 
