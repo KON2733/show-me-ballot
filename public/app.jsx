@@ -875,35 +875,6 @@ function findDistrictsFromCoords(lat, lon) {
   };
 }
 
-function pointInRing(lon, lat, ring) {
-  // Kept for potential future use if this ever runs somewhere that can get
-  // real coordinates (a real deployed site, not a Claude artifact — see
-  // README/chat notes on why device geolocation and address geocoding
-  // can't run inside this sandbox).
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i][0], yi = ring[i][1];
-    const xj = ring[j][0], yj = ring[j][1];
-    const intersect =
-      yi > lat !== yj > lat &&
-      lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
-
-function findDistrictsFromCoords(lat, lon) {
-  const individual = DISTRICT_BOUNDARIES.individual.find((d) =>
-    pointInRing(lon, lat, d.ring)
-  );
-  const atLarge = DISTRICT_BOUNDARIES.atLarge.find((d) =>
-    pointInRing(lon, lat, d.ring)
-  );
-  return {
-    individual: individual ? individual.label : null,
-    atLarge: atLarge ? atLarge.label : null,
-  };
-}
 
 function DistrictFinder({
   myIndividualDistrict,
