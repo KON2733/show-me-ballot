@@ -450,6 +450,7 @@ function App() {
       <div style={{ flex: 1, padding: "18px 16px 122px", overflowY: "auto" }}>
         {tab === "register" && <RegisterScreen />}
         {tab === "learn" && <LearnScreen />}
+        {tab === "measures" && <MeasuresScreen />}
         {tab === "candidates" && !detail && (
           <CandidatesScreen
             county={county}
@@ -521,6 +522,14 @@ function App() {
           }}
         />
         <TabButton
+          icon="📜"
+          label="Measures"
+          color="#8A6BBE"
+          divider
+          active={tab === "measures"}
+          onClick={() => setTab("measures")}
+        />
+        <TabButton
           icon="⭐"
           label={`Saved${saved.length ? ` (${saved.length})` : ""}`}
           color="#E8A93B"
@@ -584,7 +593,7 @@ const ELECTIONS_GUIDE = [
       {
         office: "Statewide ballot measures",
         note:
-          "Missouri sometimes puts constitutional amendments directly to voters. One this cycle asks whether charter counties, Jackson County included, should be required to elect their property assessor instead of appointing one.",
+          "Five statewide questions were on the November 3 ballot: Amendments 3, 6, 7 and 8, and Proposition A. See the Measures tab for what each one did.",
       },
     ],
     notOnBallot: [
@@ -616,7 +625,7 @@ const ELECTIONS_GUIDE = [
       {
         office: "County Assessor, Treasurer, and most other county offices",
         note:
-          "Jackson County is a \"charter county,\" so most department heads are appointed rather than elected — that's exactly what the statewide assessor ballot measure above would change.",
+          "Jackson County is a \"charter county,\" so most department heads are appointed rather than elected.",
       },
     ],
   },
@@ -656,82 +665,110 @@ const ELECTIONS_GUIDE = [
 ];
 
 function LearnScreen() {
+  // Nothing is described until the reader taps a level of government.
+  const [open, setOpen] = useState(null);
   return (
     <div>
       <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 16 }}>
-        Not every level of government is on your ballot every year. Here's what you're actually
-        eligible to vote on this November as a Jackson County resident — and what's elected on a
-        different cycle, so you're not caught off guard looking for it.
+        Not every level of government is on your ballot every year. Tap a level below to see what
+        you can vote on this November as a Jackson County resident, and what is elected on a
+        different cycle.
       </div>
 
-      {ELECTIONS_GUIDE.map((section) => (
-        <Card key={section.level} accent={section.color} style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 22 }}>{section.icon}</span>
-            <span style={{ fontWeight: 700, fontSize: 16 }}>{section.level}</span>
-          </div>
-          <div style={{ fontSize: 13, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 12 }}>
-            {section.intro}
-          </div>
-
-          {section.onBallot.length > 0 && (
-            <div style={{ marginBottom: section.notOnBallot.length > 0 ? 12 : 0 }}>
-              <div
+      {ELECTIONS_GUIDE.map((section) => {
+        const isOpen = open === section.level;
+        return (
+          <div key={section.level} style={{ marginBottom: 12 }}>
+            <button
+              onClick={() => setOpen(isOpen ? null : section.level)}
+              aria-expanded={isOpen}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                padding: "22px 18px",
+                borderRadius: 22,
+                border: "3px solid " + (isOpen ? section.color : "transparent"),
+                background: "#FFFFFF",
+                color: "#22314A",
+                cursor: "pointer",
+                textAlign: "left",
+                boxShadow: "0 2px 10px rgba(34,49,74,0.08), 0 1px 2px rgba(34,49,74,0.05)",
+              }}
+            >
+              <span style={{ fontSize: 36, lineHeight: 1 }}>{section.icon}</span>
+              <span
                 style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                  color: section.color,
-                  marginBottom: 6,
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: "'Fraunces', serif",
+                  fontWeight: 700,
+                  fontSize: 28,
+                  lineHeight: 1.1,
                 }}
               >
-                On your ballot this year
-              </div>
-              {section.onBallot.map((item) => (
-                <div key={item.office} style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-                    {item.office}
-                    {item.term && (
-                      <span style={{ fontWeight: 600, fontSize: 11, color: "#A9B0BE" }}>
-                        · {item.term}
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 12.5, color: "#4E5A6C", lineHeight: 1.5, marginTop: 2 }}>
-                    {item.note}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                {section.level}
+              </span>
+              <span style={{ fontSize: 24, fontWeight: 800, color: section.color }}>
+                {isOpen ? "\u25B2" : "\u25BC"}
+              </span>
+            </button>
 
-          {section.notOnBallot.length > 0 && (
-            <div>
+            {isOpen && (
               <div
                 style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                  color: "#A9B0BE",
-                  marginBottom: 6,
+                  background: "#FFFFFF",
+                  borderRadius: 18,
+                  borderLeft: "5px solid " + section.color,
+                  padding: "16px 16px 8px 18px",
+                  marginTop: 8,
+                  boxShadow: "0 2px 10px rgba(34,49,74,0.08), 0 1px 2px rgba(34,49,74,0.05)",
                 }}
               >
-                Not this year
-              </div>
-              {section.notOnBallot.map((item) => (
-                <div key={item.office} style={{ marginBottom: 10 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13.5, color: "#8A93A3" }}>{item.office}</div>
-                  <div style={{ fontSize: 12.5, color: "#A9B0BE", lineHeight: 1.5, marginTop: 2 }}>
-                    {item.note}
-                  </div>
+                <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 14 }}>
+                  {section.intro}
                 </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      ))}
+
+                {section.onBallot.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: section.color, marginBottom: 6 }}>
+                      On your ballot this year
+                    </div>
+                    {section.onBallot.map((item) => (
+                      <div key={item.office} style={{ marginBottom: 12 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                          {item.office}
+                          {item.term && (
+                            <span style={{ fontWeight: 600, fontSize: 11, color: "#8A93A3" }}>
+                              {"\u00B7 " + item.term}
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 13, color: "#4E5A6C", lineHeight: 1.5, marginTop: 2 }}>{item.note}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {section.notOnBallot.length > 0 && (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#8A93A3", marginBottom: 6 }}>
+                      Not this year
+                    </div>
+                    {section.notOnBallot.map((item) => (
+                      <div key={item.office} style={{ marginBottom: 12 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: "#8A93A3" }}>{item.office}</div>
+                        <div style={{ fontSize: 13, color: "#8A93A3", lineHeight: 1.5, marginTop: 2 }}>{item.note}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -799,45 +836,7 @@ function RegisterScreen() {
 
       <SectionLabel>How to register — 4 steps</SectionLabel>
       {REG_STEPS.map((s, i) => (
-        <Card key={i} accent="#2F8F8A">
-          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                minWidth: 30,
-                borderRadius: "50%",
-                background: "#DDEEEC",
-                color: "#1F6F69",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: "'Fraunces', serif",
-                fontWeight: 700,
-                fontSize: 14,
-                marginTop: 1,
-              }}
-            >
-              {i + 1}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 15.5 }}>{s.title}</div>
-              <div style={{ fontSize: 13.5, color: "#4E5A6C", marginTop: 4, lineHeight: 1.5 }}>
-                {s.detail}
-              </div>
-              {s.link && (
-                <a
-                  href={s.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ fontSize: 13.5, fontWeight: 700, display: "inline-block", marginTop: 8 }}
-                >
-                  {s.linkLabel} →
-                </a>
-              )}
-            </div>
-          </div>
-        </Card>
+        <RegStep key={i} step={s} index={i} />
       ))}
 
       <div style={{ fontSize: 11.5, color: "#A9B0BE", marginTop: 6, lineHeight: 1.5 }}>
@@ -847,34 +846,6 @@ function RegisterScreen() {
     </div>
   );
 }
-
-function pointInRing(lon, lat, ring) {
-  // Ray-casting algorithm, ring is [[lon,lat], ...]
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i][0], yi = ring[i][1];
-    const xj = ring[j][0], yj = ring[j][1];
-    const intersect =
-      yi > lat !== yj > lat &&
-      lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
-
-function findDistrictsFromCoords(lat, lon) {
-  const individual = DISTRICT_BOUNDARIES.individual.find((d) =>
-    pointInRing(lon, lat, d.ring)
-  );
-  const atLarge = DISTRICT_BOUNDARIES.atLarge.find((d) =>
-    pointInRing(lon, lat, d.ring)
-  );
-  return {
-    individual: individual ? individual.label : null,
-    atLarge: atLarge ? atLarge.label : null,
-  };
-}
-
 
 function DistrictFinder({
   myIndividualDistrict,
@@ -1022,6 +993,9 @@ function DistrictFinder({
           <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 10 }}>
             Every Jackson County voter has <strong>two</strong> legislature races: one individual
             district (1st–6th) and one at-large district. Enter your address and we'll find both.
+          </div>
+          <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 18, lineHeight: 1.25, color: "#22314A", marginBottom: 8 }}>
+            How to know who's on your ballot, find your district
           </div>
           <input
             value={address}
@@ -1184,46 +1158,212 @@ function CandidatesScreen({
         <div key={i} style={{ marginBottom: 22 }}>
           <SectionLabel>{race.office}</SectionLabel>
           {race.candidates.map((c) => (
-            <Card
-              key={c.name}
-              onClick={() => onOpen(c)}
-              accent={c.party === "Democratic" ? "#E8A93B" : "#2F8F8A"}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
-                  <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18 }}>
-                    {c.name}
-                  </div>
-                  <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <Pill tone={c.party === "Democratic" ? "a" : "b"}>{c.party}</Pill>
-                    {c.incumbent && <Pill>Incumbent</Pill>}
-                  </div>
-                  <div style={{ fontSize: 13.5, marginTop: 8, color: "#4E5A6C" }}>{c.headline}</div>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleSave(c.name);
-                  }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: 21,
-                    cursor: "pointer",
-                    lineHeight: 1,
-                  }}
-                  aria-label="Save candidate"
-                >
-                  {saved.includes(c.name) ? "⭐" : "☆"}
-                </button>
-              </div>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: "#2F8F8A", marginTop: 12 }}>
-                View full positions →
-              </div>
-            </Card>
+            <CandidateCard key={c.name} c={c} saved={saved.includes(c.name)} toggleSave={toggleSave} onOpen={onOpen} />
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+function RegStep({ step, index }) {
+  // The step's description stays hidden until the reader taps its title.
+  const [open, setOpen] = useState(false);
+  return (
+    <Card accent="#2F8F8A" style={{ padding: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "20px 18px 20px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: "inherit" }}
+      >
+        <span style={{ width: 36, height: 36, minWidth: 36, borderRadius: "50%", background: "#DDEEEC", color: "#1F6F69", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 17 }}>
+          {index + 1}
+        </span>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 21, lineHeight: 1.15 }}>{step.title}</span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: "#2F8F8A" }}>{open ? "\u25B2" : "\u25BC"}</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 18px 18px 20px" }}>
+          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55 }}>{step.detail}</div>
+          {step.link && (
+            <a href={step.link} target="_blank" rel="noreferrer" style={{ fontSize: 13.5, fontWeight: 700, display: "inline-block", marginTop: 10 }}>
+              {step.linkLabel} →
+            </a>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function CandidateCard({ c, saved, toggleSave, onOpen }) {
+  // Only the name and party show until the reader taps the name.
+  const [open, setOpen] = useState(false);
+  return (
+    <Card accent={c.party === "Democratic" ? "#E8A93B" : "#2F8F8A"} style={{ padding: 0 }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <button
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10, padding: "20px 8px 20px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: "inherit" }}
+        >
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ display: "block", fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 22, lineHeight: 1.15 }}>{c.name}</span>
+            <span style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+              <Pill tone={c.party === "Democratic" ? "a" : "b"}>{c.party}</Pill>
+              {c.incumbent && <Pill>Incumbent</Pill>}
+            </span>
+          </span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "#2F8F8A" }}>{open ? "\u25B2" : "\u25BC"}</span>
+        </button>
+        <button
+          onClick={() => toggleSave(c.name)}
+          style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", lineHeight: 1, padding: "20px 18px 20px 8px" }}
+          aria-label="Save candidate"
+        >
+          {saved ? "\u2B50" : "\u2606"}
+        </button>
+      </div>
+      {open && (
+        <div style={{ padding: "0 18px 18px 20px" }}>
+          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55 }}>{c.headline}</div>
+          <button
+            onClick={() => onOpen(c)}
+            style={{ background: "none", border: "none", padding: 0, marginTop: 12, fontSize: 13.5, fontWeight: 700, color: "#2F8F8A", cursor: "pointer" }}
+          >
+            View full positions →
+          </button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+const MEASURES = [
+  {
+    id: "amend3", level: "Statewide", name: "Amendment 3", short: "Abortion and minors' gender transition care",
+    kind: "Put on the ballot by the legislature",
+    what: "Would repeal the abortion-rights amendment voters approved in 2024. Abortion would be allowed only in limited cases (medical emergencies, serious fetal anomalies, and rape or incest up to 12 weeks), and gender transition procedures for anyone under 18 would be banned.",
+    yes: "Repeal the 2024 amendment and adopt these restrictions.",
+    no: "Keep the 2024 constitutional protections as they are.",
+    for: "Supporters (Missouri Republican Party guide) say it restores the right to sue over harm from an abortion, requires written parental consent for minors, and makes the ban on gender transition procedures for minors permanent.",
+    against: "Opponents (Kansas City Defender guide) say voters already decided this in 2024, the measure bundles two separate issues, and restoring the right later would take another petition campaign.",
+    result: "Unofficial result: rejected, 55% No to 45% Yes.",
+  },
+  {
+    id: "amend6", level: "Statewide", name: "Amendment 6", short: "Protecting citizen-initiated laws",
+    kind: "Put on the ballot by citizen petition",
+    what: "Would make the initiative and referendum process a protected right, let courts correct misleading ballot summaries, and require 80% of both legislative chambers, plus a statewide vote, to change or repeal a law voters passed by initiative.",
+    yes: "Adopt these protections for voter-passed laws.",
+    no: "Keep current rules, where the legislature can change voter-passed laws more easily.",
+    for: "Supporters (Kansas City Defender guide) point to the legislature repealing voter-approved paid sick leave months after it took effect, and say this makes that harder.",
+    against: "Opponents (Missouri Republican Party guide) say it shields voter-passed laws from legislative change at a higher bar than amending the Constitution, and note a Cole County judge ruled it unconstitutional.",
+    result: "Unofficial result: approved, 60% Yes to 40% No.",
+  },
+  {
+    id: "amend7", level: "Statewide", name: "Amendment 7", short: "Show-Me Prosperity Investment Fund",
+    kind: "Put on the ballot by the legislature",
+    what: "Would create a permanent state-managed investment fund, limit the legislature's access to it, and use its earnings to eliminate state taxes once the earnings can replace them.",
+    yes: "Create the fund.",
+    no: "Do not create the fund.",
+    for: "Supporters (Missouri Republican Party guide) say a 3% cap on withdrawals protects the fund, and cite Alaska's Permanent Fund as a model while acknowledging the goal would take generations.",
+    against: "Opponents (Kansas City Defender guide, citing the Missouri Budget Project) say the fund starts with no money and would need over $600 billion to replace state taxes, against a general budget of about $13 billion a year.",
+    result: "Unofficial result: rejected, 61% No to 39% Yes.",
+  },
+  {
+    id: "amend8", level: "Statewide", name: "Amendment 8", short: "Elected county sheriffs",
+    kind: "Put on the ballot by the legislature",
+    what: "Would write the election of county sheriffs into the Missouri Constitution and allow an elected sheriff to be removed only through a court case brought by the state Attorney General.",
+    yes: "Adopt these changes.",
+    no: "Keep current rules, where local prosecutors can also seek a sheriff's removal.",
+    for: "Supporters (Missouri Republican Party guide) say it keeps the legislature from replacing elected sheriffs with appointees, which matters most in rural counties.",
+    against: "Opponents (Kansas City Defender guide) say it moves removal power to the Attorney General, which could make a sheriff very hard to remove, and that it uses undefined language about \"traitors.\"",
+    result: "Unofficial result: approved, 51% Yes to 49% No.",
+  },
+  {
+    id: "propA", level: "Statewide", name: "Proposition A", short: "2025 congressional map",
+    kind: "Referendum petition on a law the legislature passed",
+    what: "Asks voters whether to approve House Bill 1 (2025), which replaced Missouri's congressional district map.",
+    yes: "Approve the new map.",
+    no: "Reject the new map and keep the 2022 districts.",
+    for: "Supporters (Missouri Republican Party guide) say the map keeps more counties whole and strengthens rural representation.",
+    against: "Opponents (Kansas City Defender guide) say it was drawn to favor Republicans and splits Kansas City at Troost Avenue.",
+    result: "Unofficial result: new map rejected, 62% No to 38% Yes.",
+  },
+  {
+    id: "combat", level: "Jackson County", name: "Question 1", short: "COMBAT sales tax renewal",
+    kind: "County question",
+    what: "Renews a quarter-cent county sales tax (about $31 million a year) for ten years. It pays for drug treatment and prevention, plus prosecution, detention, and policing of violent crime and drug offenses.",
+    yes: "Renew the tax for ten years.",
+    no: "Let the tax expire.",
+    for: "Supporters say it funds addiction treatment, recovery housing, violence interruption, and youth programs that many community groups depend on.",
+    against: "Critics (Kansas City Defender guide) say about 63% of the money has gone to the justice system and 37% to community programs.",
+    result: "Reported passed by The Beacon; vote totals not found yet.",
+  },
+];
+
+function MeasureCard({ m }) {
+  // Details stay hidden until the reader taps the measure's name.
+  const [open, setOpen] = useState(false);
+  return (
+    <Card accent="#2F8F8A" style={{ padding: 0 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "20px 18px 20px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: "inherit" }}
+      >
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 24, lineHeight: 1.1 }}>{m.name}</span>
+          <span style={{ display: "block", fontSize: 14, color: "#4E5A6C", marginTop: 4, lineHeight: 1.35 }}>{m.short}</span>
+        </span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: "#2F8F8A" }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 18px 18px 20px" }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#8A93A3", marginBottom: 8 }}>{m.kind}</div>
+          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 14 }}>{m.what}</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
+            <div style={{ flex: "1 1 160px", minWidth: 0, background: "#EAF5EE", borderRadius: 14, padding: "12px 14px" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#3E8F63", letterSpacing: 0.5, marginBottom: 4 }}>A YES VOTE</div>
+              <div style={{ fontSize: 13.5, color: "#22314A", lineHeight: 1.45 }}>{m.yes}</div>
+            </div>
+            <div style={{ flex: "1 1 160px", minWidth: 0, background: "#FBEBE7", borderRadius: 14, padding: "12px 14px" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#D2593F", letterSpacing: 0.5, marginBottom: 4 }}>A NO VOTE</div>
+              <div style={{ fontSize: 13.5, color: "#22314A", lineHeight: 1.45 }}>{m.no}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#8A93A3", letterSpacing: 0.5, marginBottom: 4 }}>ARGUMENT FOR</div>
+          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 12 }}>{m.for}</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: "#8A93A3", letterSpacing: 0.5, marginBottom: 4 }}>ARGUMENT AGAINST</div>
+          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 14 }}>{m.against}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#22314A", background: "#F1ECDF", borderRadius: 12, padding: "10px 12px" }}>{m.result}</div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function MeasuresScreen() {
+  const groups = ["Statewide", "Jackson County"];
+  return (
+    <div>
+      <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 16 }}>
+        These were the yes-or-no questions on the November 3, 2026 ballot. Tap one to see what a
+        yes or no vote meant and the main arguments on each side. Results are unofficial; confirm
+        final numbers with the Missouri Secretary of State.
+      </div>
+      {groups.map((g) => (
+        <div key={g} style={{ marginBottom: 12 }}>
+          <SectionLabel>{g}</SectionLabel>
+          {MEASURES.filter((m) => m.level === g).map((m) => (
+            <MeasureCard key={m.id} m={m} />
+          ))}
+        </div>
+      ))}
+      <div style={{ fontSize: 11.5, color: "#8A93A3", lineHeight: 1.5 }}>
+        Sources: Missouri Secretary of State certified ballot list, Ballotpedia, The Beacon, and two
+        voter guides with stated viewpoints (Missouri Republican Party; Kansas City Defender).
+      </div>
     </div>
   );
 }
