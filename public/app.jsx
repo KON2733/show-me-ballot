@@ -293,7 +293,7 @@ function Pill({ children, tone = "neutral" }) {
         display: "inline-block",
         background: t.bg,
         color: t.fg,
-        fontSize: 11.5,
+        fontSize: 13,
         fontWeight: 700,
         borderRadius: 999,
         padding: "3px 10px",
@@ -326,7 +326,7 @@ function TabButton({ active, label, icon, onClick, color, divider }) {
           flex: 1,
           background: "none",
           border: "none",
-          padding: "8px 4px",
+          padding: "8px 1px",
           display: "flex",
           justifyContent: "center",
           cursor: "pointer",
@@ -338,7 +338,7 @@ function TabButton({ active, label, icon, onClick, color, divider }) {
             flexDirection: "column",
             alignItems: "center",
             gap: 3,
-            padding: "7px 6px 9px",
+            padding: "7px 3px 9px",
             borderRadius: 16,
             background: active ? `${color}22` : "transparent",
             transition: "background 0.15s ease",
@@ -358,7 +358,7 @@ function TabButton({ active, label, icon, onClick, color, divider }) {
           <span
             style={{
               fontFamily: "'Inter', sans-serif",
-              fontSize: 12.5,
+              fontSize: 14,
               fontWeight: active ? 800 : 600,
               color: active ? color : "#8A93A3",
               letterSpacing: 0.1,
@@ -373,7 +373,8 @@ function TabButton({ active, label, icon, onClick, color, divider }) {
 }
 
 function App() {
-  const [tab, setTab] = useState("register");
+  const [setup, setSetup] = useState(() => readSetup());
+  const [tab, setTab] = useState(() => (readSetup() ? "home" : "intro"));
   const [county, setCounty] = useState("Jackson County");
   const [myIndividualDistrict, setMyIndividualDistrict] = useState(null);
   const [myAtLargeDistrict, setMyAtLargeDistrict] = useState(null);
@@ -384,10 +385,37 @@ function App() {
 
   const races = COUNTIES[county];
 
+  const finishSetup = (issues, share) => {
+    const prev = setup || {};
+    const v = { issues, share, at: Date.now(), sent: !!prev.sent };
+    writeSetup(v);
+    setSetup(v);
+    setTab("home");
+    // Anonymous count of the picked issues, sent once per device. Nothing else is sent.
+    if (share && issues.length > 0 && !v.sent) {
+      try {
+        fetch("/api/issues", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ issues }),
+        })
+          .then((r) => {
+            if (r.ok) {
+              const done = { ...v, sent: true };
+              writeSetup(done);
+              setSetup(done);
+            }
+          })
+          .catch(() => {});
+      } catch (e) {}
+    }
+  };
+
   const toggleSave = (name) =>
     setSaved((s) => (s.includes(name) ? s.filter((n) => n !== name) : [...s, name]));
 
   return (
+    <IssuesContext.Provider value={setup ? setup.issues : []}>
     <div
       style={{
         maxWidth: 420,
@@ -419,9 +447,20 @@ function App() {
           borderBottomRightRadius: 28,
         }}
       >
+        {tab !== "home" && tab !== "intro" && (
+          <button
+            onClick={() => {
+              setTab("home");
+              setDetail(null);
+            }}
+            style={{ background: "rgba(255,255,255,0.16)", color: "#FBF6EC", border: "none", borderRadius: 999, padding: "8px 16px", fontSize: 16, fontWeight: 700, cursor: "pointer", marginBottom: 12 }}
+          >
+            {"\u2039 Home"}
+          </button>
+        )}
         <div
           style={{
-            fontSize: 11,
+            fontSize: 13,
             letterSpacing: 2,
             opacity: 0.7,
             fontWeight: 700,
@@ -441,13 +480,23 @@ function App() {
         >
           Show-Me Ballot
         </div>
-        <div style={{ fontSize: 13, opacity: 0.85, marginTop: 6 }}>
+        <div style={{ fontSize: 15, opacity: 0.85, marginTop: 6 }}>
           Know how to register, and who's actually on your ballot.
         </div>
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, padding: "18px 16px 122px", overflowY: "auto" }}>
+      <div style={{ flex: 1, padding: BALLOT_TABS.includes(tab) ? "18px 16px 122px" : "18px 16px 40px", overflowY: "auto" }}>
+        {tab === "intro" && <IntroScreen initial={setup} onDone={finishSetup} />}
+        {tab === "home" && (
+          <HomeScreen
+            setup={setup}
+            go={(t) => {
+              setTab(t);
+              setDetail(null);
+            }}
+          />
+        )}
         {tab === "register" && <RegisterScreen />}
         {tab === "learn" && <LearnScreen />}
         {tab === "measures" && <MeasuresScreen />}
@@ -487,7 +536,7 @@ function App() {
         style={{
           position: "sticky",
           bottom: 0,
-          display: "flex",
+          display: BALLOT_TABS.includes(tab) ? "flex" : "none",
           background: "#FFFFFF",
           boxShadow: "0 -2px 12px rgba(34,49,74,0.08)",
           borderTopLeftRadius: 18,
@@ -496,19 +545,11 @@ function App() {
         }}
       >
         <TabButton
-          icon="🗳️"
-          label="Register"
-          color="#E8734A"
-          active={tab === "register"}
-          onClick={() => setTab("register")}
-        />
-        <TabButton
-          icon="📚"
-          label="Learn"
-          color="#3E8F63"
-          divider
-          active={tab === "learn"}
-          onClick={() => setTab("learn")}
+          icon="📜"
+          label="Measures"
+          color="#8A6BBE"
+          active={tab === "measures"}
+          onClick={() => setTab("measures")}
         />
         <TabButton
           icon="📋"
@@ -522,14 +563,6 @@ function App() {
           }}
         />
         <TabButton
-          icon="📜"
-          label="Measures"
-          color="#8A6BBE"
-          divider
-          active={tab === "measures"}
-          onClick={() => setTab("measures")}
-        />
-        <TabButton
           icon="⭐"
           label={`Saved${saved.length ? ` (${saved.length})` : ""}`}
           color="#E8A93B"
@@ -539,8 +572,11 @@ function App() {
         />
       </div>
     </div>
+    </IssuesContext.Provider>
   );
 }
+
+const BALLOT_TABS = ["measures", "candidates", "saved"];
 
 const ELECTIONS_GUIDE = [
   {
@@ -669,10 +705,8 @@ function LearnScreen() {
   const [open, setOpen] = useState(null);
   return (
     <div>
-      <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 16 }}>
-        Not every level of government is on your ballot every year. Tap a level below to see what
-        you can vote on this November as a Jackson County resident, and what is elected on a
-        different cycle.
+      <div style={{ fontSize: 16, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 16 }}>
+        Tap a level of government to see what was on your ballot, and what wasn't.
       </div>
 
       {ELECTIONS_GUIDE.map((section) => {
@@ -726,26 +760,26 @@ function LearnScreen() {
                   boxShadow: "0 2px 10px rgba(34,49,74,0.08), 0 1px 2px rgba(34,49,74,0.05)",
                 }}
               >
-                <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 14 }}>
+                <div style={{ fontSize: 16, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 14 }}>
                   {section.intro}
                 </div>
 
                 {section.onBallot.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: section.color, marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: section.color, marginBottom: 6 }}>
                       On your ballot this year
                     </div>
                     {section.onBallot.map((item) => (
                       <div key={item.office} style={{ marginBottom: 12 }}>
-                        <div style={{ fontWeight: 700, fontSize: 14, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                        <div style={{ fontWeight: 700, fontSize: 16, display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
                           {item.office}
                           {item.term && (
-                            <span style={{ fontWeight: 600, fontSize: 11, color: "#8A93A3" }}>
+                            <span style={{ fontWeight: 600, fontSize: 13, color: "#8A93A3" }}>
                               {"\u00B7 " + item.term}
                             </span>
                           )}
                         </div>
-                        <div style={{ fontSize: 13, color: "#4E5A6C", lineHeight: 1.5, marginTop: 2 }}>{item.note}</div>
+                        <div style={{ fontSize: 15, color: "#4E5A6C", lineHeight: 1.5, marginTop: 2 }}>{item.note}</div>
                       </div>
                     ))}
                   </div>
@@ -753,13 +787,13 @@ function LearnScreen() {
 
                 {section.notOnBallot.length > 0 && (
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#8A93A3", marginBottom: 6 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#8A93A3", marginBottom: 6 }}>
                       Not this year
                     </div>
                     {section.notOnBallot.map((item) => (
                       <div key={item.office} style={{ marginBottom: 12 }}>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: "#8A93A3" }}>{item.office}</div>
-                        <div style={{ fontSize: 13, color: "#8A93A3", lineHeight: 1.5, marginTop: 2 }}>{item.note}</div>
+                        <div style={{ fontWeight: 700, fontSize: 16, color: "#8A93A3" }}>{item.office}</div>
+                        <div style={{ fontSize: 15, color: "#8A93A3", lineHeight: 1.5, marginTop: 2 }}>{item.note}</div>
                       </div>
                     ))}
                   </div>
@@ -777,7 +811,7 @@ function SectionLabel({ children }) {
   return (
     <div
       style={{
-        fontSize: 11.5,
+        fontSize: 13,
         fontWeight: 800,
         letterSpacing: 1,
         color: "#8A93A3",
@@ -805,7 +839,7 @@ function RegisterScreen() {
           boxShadow: "0 8px 20px rgba(232,115,74,0.28)",
         }}
       >
-        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 1, opacity: 0.9 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 1, opacity: 0.9 }}>
           NEXT DEADLINE
         </div>
         <div
@@ -818,12 +852,12 @@ function RegisterScreen() {
         >
           Register by {UPCOMING[0].regBy}
         </div>
-        <div style={{ fontSize: 13.5, marginTop: 2, opacity: 0.95 }}>
+        <div style={{ fontSize: 16, marginTop: 2, opacity: 0.95 }}>
           for the Primary Election on {UPCOMING[0].date}
         </div>
         <div
           style={{
-            fontSize: 12.5,
+            fontSize: 14,
             marginTop: 10,
             paddingTop: 10,
             borderTop: "1px solid rgba(255,255,255,0.35)",
@@ -839,7 +873,7 @@ function RegisterScreen() {
         <RegStep key={i} step={s} index={i} />
       ))}
 
-      <div style={{ fontSize: 11.5, color: "#A9B0BE", marginTop: 6, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: "#A9B0BE", marginTop: 6, lineHeight: 1.5 }}>
         Registration rules and dates shown are for Missouri and current as of July 2026. Always
         confirm details with your County Clerk or sos.mo.gov before a deadline.
       </div>
@@ -915,59 +949,59 @@ function DistrictFinder({
 
   return (
     <Card accent="#E8734A" style={{ marginBottom: 18 }}>
-      <div style={{ fontWeight: 700, fontSize: 15.5, marginBottom: 4 }}>
+      <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 4 }}>
         {hasAnyResult ? "Your districts" : "Find your districts"}
       </div>
 
       {hasAnyResult ? (
         <div>
           {matchedAddress && (
-            <div style={{ fontSize: 12, color: "#8A93A3", marginTop: 4, marginBottom: 8 }}>
+            <div style={{ fontSize: 14, color: "#8A93A3", marginTop: 4, marginBottom: 8 }}>
               Matched: {matchedAddress}
             </div>
           )}
 
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#E8A93B", marginTop: 8, marginBottom: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#E8A93B", marginTop: 8, marginBottom: 6 }}>
             County
           </div>
-          <div style={{ fontSize: 12.5, color: "#8A93A3", marginBottom: 3 }}>Individual district</div>
+          <div style={{ fontSize: 14, color: "#8A93A3", marginBottom: 3 }}>Individual district</div>
           <div style={{ marginBottom: 8 }}>
             {myIndividualDistrict ? (
               <Pill tone="b">{myIndividualDistrict}</Pill>
             ) : (
-              <span style={{ fontSize: 12.5, color: "#A9B0BE" }}>Not found</span>
+              <span style={{ fontSize: 14, color: "#A9B0BE" }}>Not found</span>
             )}
           </div>
-          <div style={{ fontSize: 12.5, color: "#8A93A3", marginBottom: 3 }}>At-large district</div>
+          <div style={{ fontSize: 14, color: "#8A93A3", marginBottom: 3 }}>At-large district</div>
           <div style={{ marginBottom: 14 }}>
             {myAtLargeDistrict ? (
               <Pill tone="a">{myAtLargeDistrict}</Pill>
             ) : (
-              <span style={{ fontSize: 12.5, color: "#A9B0BE" }}>Not found</span>
+              <span style={{ fontSize: 14, color: "#A9B0BE" }}>Not found</span>
             )}
           </div>
 
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#2F8F8A", marginBottom: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#2F8F8A", marginBottom: 6 }}>
             State
           </div>
-          <div style={{ fontSize: 12.5, color: "#8A93A3", marginBottom: 3 }}>Missouri House district</div>
+          <div style={{ fontSize: 14, color: "#8A93A3", marginBottom: 3 }}>Missouri House district</div>
           <div style={{ marginBottom: 8 }}>
             {myStateHouseDistrict ? (
               <Pill tone="b">{myStateHouseDistrict}</Pill>
             ) : (
-              <span style={{ fontSize: 12.5, color: "#A9B0BE" }}>Not found</span>
+              <span style={{ fontSize: 14, color: "#A9B0BE" }}>Not found</span>
             )}
           </div>
-          <div style={{ fontSize: 12.5, color: "#8A93A3", marginBottom: 3 }}>Missouri Senate district</div>
+          <div style={{ fontSize: 14, color: "#8A93A3", marginBottom: 3 }}>Missouri Senate district</div>
           <div style={{ marginBottom: 8 }}>
             {myStateSenateDistrict ? (
               <Pill tone="a">{myStateSenateDistrict}</Pill>
             ) : (
-              <span style={{ fontSize: 12.5, color: "#A9B0BE" }}>Not found</span>
+              <span style={{ fontSize: 14, color: "#A9B0BE" }}>Not found</span>
             )}
           </div>
           {(myStateHouseDistrict || myStateSenateDistrict) && (
-            <div style={{ fontSize: 11.5, color: "#A9B0BE", marginBottom: 10, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 13, color: "#A9B0BE", marginBottom: 10, lineHeight: 1.4 }}>
               Candidate info for Missouri House/Senate races is coming soon — for now this just
               confirms which districts you're in.
             </div>
@@ -980,7 +1014,7 @@ function DistrictFinder({
               border: "none",
               color: "#2F8F8A",
               fontWeight: 700,
-              fontSize: 13,
+              fontSize: 15,
               cursor: "pointer",
               padding: 0,
             }}
@@ -990,9 +1024,8 @@ function DistrictFinder({
         </div>
       ) : (
         <div>
-          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 10 }}>
-            Every Jackson County voter has <strong>two</strong> legislature races: one individual
-            district (1st–6th) and one at-large district. Enter your address and we'll find both.
+          <div style={{ fontSize: 16, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 10 }}>
+            Type your address and we'll show the races on your ballot.
           </div>
           <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 18, lineHeight: 1.25, color: "#22314A", marginBottom: 8 }}>
             How to know who's on your ballot, find your district
@@ -1007,7 +1040,7 @@ function DistrictFinder({
               padding: "10px 12px",
               borderRadius: 12,
               border: "1px solid #E9E0CC",
-              fontSize: 13.5,
+              fontSize: 16,
               marginBottom: 10,
             }}
           />
@@ -1030,12 +1063,12 @@ function DistrictFinder({
           </button>
 
           {status === "error" && (
-            <div style={{ fontSize: 12.5, color: "#8A5E12", background: "#FDEDD3", borderRadius: 12, padding: "10px 12px", marginTop: 10, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 14, color: "#8A5E12", background: "#FDEDD3", borderRadius: 12, padding: "10px 12px", marginTop: 10, lineHeight: 1.5 }}>
               {errorMsg}
             </div>
           )}
           {status === "outside" && (
-            <div style={{ fontSize: 12.5, color: "#8A5E12", background: "#FDEDD3", borderRadius: 12, padding: "10px 12px", marginTop: 10, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 14, color: "#8A5E12", background: "#FDEDD3", borderRadius: 12, padding: "10px 12px", marginTop: 10, lineHeight: 1.5 }}>
               That address matched, but it's outside the district boundaries we have on file —
               double check it's in Jackson County.
             </div>
@@ -1043,6 +1076,54 @@ function DistrictFinder({
         </div>
       )}
     </Card>
+  );
+}
+
+const IssuesContext = React.createContext([]);
+
+const ISSUE_SHORT = { taxes: "Taxes", schools: "Schools", safety: "Public safety", health: "Health care", housing: "Housing", jobs: "Jobs", roads: "Roads", environment: "Environment", abortion: "Abortion", guns: "Guns" };
+
+// Which issues each stated position (by its order in the candidate's list) speaks to.
+const CANDIDATE_TAGS = {
+  "Scott Fitzpatrick": [["taxes"], ["taxes"], ["schools"], ["schools"], []],
+  "Quentin Wilson": [[], [], []],
+  "Dustin Coffell": [],
+  "Stacy Lake": [["taxes"], ["taxes"], [], ["roads"]],
+  "Alan Rohlfing": [["taxes"], ["taxes"], ["taxes"], [], ["safety", "roads"]],
+  "Kelly Thompson": [[], [], []],
+  "Tiffany Price": [["schools"], ["schools"], ["health"], ["safety", "jobs"], ["guns", "safety"]],
+  "Susan B. Wilson": [["taxes"], [], ["safety"], ["jobs"]],
+};
+const MEASURE_TAGS = { amend3: ["abortion", "health"], amend6: [], amend7: ["taxes"], amend8: ["safety"], propA: [], combat: ["safety", "health"] };
+
+
+// Plain-language direction on an issue, only where the candidate's own statements support it.
+// dir: "lower" | "raise" | "unstated" | "none"
+const DIR_LABEL = { lower: "Would lower", raise: "Would raise", unstated: "Rate not stated", none: "Doesn't set rates" };
+const STANCES = {
+  "Alan Rohlfing": { taxes: { dir: "unstated", text: "He has not said whether he would raise or lower tax rates. He wants faster refunds or credits for homeowners overcharged by the 2023 assessments, fairer assessments that are easier to appeal, and cuts to what he calls frivolous county spending." } },
+  "Stacy Lake": { taxes: { dir: "unstated", text: "In the material we reviewed she has not said whether she would raise or lower tax rates. She wants property assessment moved in-house, the Tyler Technologies contract ended, and a forensic audit of county finances." } },
+  "Susan B. Wilson": { taxes: { dir: "unstated", text: "She has not said whether she would raise or lower tax rates. She wants data-driven property assessments, a faster and clearer appeals process, and county budgets passed on time." } },
+  "Scott Fitzpatrick": { taxes: { dir: "none", text: "The State Auditor does not set tax rates. He says he would audit how state and local governments spend tax money, including school districts." } },
+};
+
+function candidateMatches(c, mine) {
+  const tags = CANDIDATE_TAGS[c.name] || [];
+  const found = [];
+  tags.forEach((t) => t.forEach((id) => { if (mine.includes(id) && !found.includes(id)) found.push(id); }));
+  return found;
+}
+
+function MatchChips({ ids, name }) {
+  if (!ids.length) return null;
+  return (
+    <span style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+      {ids.map((id) => (
+        <span key={id} style={{ background: "var(--pill-a-bg)", color: "var(--pill-a-fg)", fontSize: 14, fontWeight: 700, borderRadius: 999, padding: "4px 11px" }}>
+          {"\u2605 " + ISSUE_SHORT[id] + ((STANCES[name] && STANCES[name][id]) ? ": " + DIR_LABEL[STANCES[name][id].dir].toLowerCase() : "")}
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -1080,6 +1161,10 @@ function CandidatesScreen({
     "State Senate District 7": "Senate seats are staggered 4-year terms, and this one isn't up again until 2028.",
   };
 
+  const myIssues = React.useContext(IssuesContext);
+  const raceScore = (r) => r.candidates.reduce((n, c) => n + candidateMatches(c, myIssues).length, 0);
+  const orderedRaces = visibleRaces.map((r, i) => ({ r, i, score: raceScore(r) })).sort((a, b) => b.score - a.score || a.i - b.i);
+  const anyMatch = orderedRaces.some((x) => x.score > 0);
   const missingDistricts = confirmedDistricts.filter(
     (d) => !races.some((r) => r.appliesTo === d) && !NOT_ON_BALLOT_THIS_CYCLE[d]
   );
@@ -1102,7 +1187,7 @@ function CandidatesScreen({
 
       <div
         style={{
-          fontSize: 12.5,
+          fontSize: 14,
           background: "#FDEDD3",
           borderRadius: 14,
           padding: "10px 14px",
@@ -1115,17 +1200,14 @@ function CandidatesScreen({
       >
         <span>💡</span>
         <span>
-          Real Nov 3, 2026 general election candidates for your ballot, based on county/state
-          election board records and local news reporting as of Oct 2026. Positions may evolve as
-          the campaign continues — verify anything critical with the candidate's own site before
-          voting.
+          Candidates for the November 3, 2026 election. Check each candidate's own website before relying on this.
         </span>
       </div>
 
       {missingDistricts.length > 0 && (
         <div
           style={{
-            fontSize: 12.5,
+            fontSize: 14,
             background: "#F1ECDF",
             borderRadius: 14,
             padding: "10px 14px",
@@ -1142,7 +1224,7 @@ function CandidatesScreen({
         <div
           key={d}
           style={{
-            fontSize: 12.5,
+            fontSize: 14,
             background: "#F1ECDF",
             borderRadius: 14,
             padding: "10px 14px",
@@ -1154,7 +1236,12 @@ function CandidatesScreen({
         </div>
       ))}
 
-      {visibleRaces.map((race, i) => (
+      {anyMatch && (
+        <div style={{ fontSize: 15, color: "#4E5A6C", marginBottom: 14, lineHeight: 1.45 }}>
+          Races that touch your issues are listed first. A {"\u2605"} means the candidate has stated a position on that issue.
+        </div>
+      )}
+      {orderedRaces.map(({ r: race }, i) => (
         <div key={i} style={{ marginBottom: 22 }}>
           <SectionLabel>{race.office}</SectionLabel>
           {race.candidates.map((c) => (
@@ -1162,6 +1249,15 @@ function CandidatesScreen({
           ))}
         </div>
       ))}
+
+      {confirmedDistricts.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <SectionLabel>Amendments and questions on your ballot</SectionLabel>
+          {MEASURES.filter((m) => m.level === "Statewide" || myIndividualDistrict || myAtLargeDistrict).map((m) => (
+            <MeasureCard key={m.id} m={m} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1176,7 +1272,7 @@ function RegStep({ step, index }) {
         aria-expanded={open}
         style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "20px 18px 20px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: "inherit" }}
       >
-        <span style={{ width: 36, height: 36, minWidth: 36, borderRadius: "50%", background: "#DDEEEC", color: "#1F6F69", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 17 }}>
+        <span style={{ width: 36, height: 36, minWidth: 36, borderRadius: "50%", background: "#DDEEEC", color: "#1F6F69", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 19 }}>
           {index + 1}
         </span>
         <span style={{ flex: 1, minWidth: 0, fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 21, lineHeight: 1.15 }}>{step.title}</span>
@@ -1184,9 +1280,9 @@ function RegStep({ step, index }) {
       </button>
       {open && (
         <div style={{ padding: "0 18px 18px 20px" }}>
-          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55 }}>{step.detail}</div>
+          <div style={{ fontSize: 16, color: "#4E5A6C", lineHeight: 1.55 }}>{step.detail}</div>
           {step.link && (
-            <a href={step.link} target="_blank" rel="noreferrer" style={{ fontSize: 13.5, fontWeight: 700, display: "inline-block", marginTop: 10 }}>
+            <a href={step.link} target="_blank" rel="noreferrer" style={{ fontSize: 16, fontWeight: 700, display: "inline-block", marginTop: 10 }}>
               {step.linkLabel} →
             </a>
           )}
@@ -1197,10 +1293,11 @@ function RegStep({ step, index }) {
 }
 
 function CandidateCard({ c, saved, toggleSave, onOpen }) {
+  const mine = React.useContext(IssuesContext);
   // Only the name and party show until the reader taps the name.
   const [open, setOpen] = useState(false);
   return (
-    <Card accent={c.party === "Democratic" ? "#E8A93B" : "#2F8F8A"} style={{ padding: 0 }}>
+    <Card accent={c.party === "Democratic" ? "var(--sun)" : "var(--river)"} style={{ padding: 0 }}>
       <div style={{ display: "flex", alignItems: "center" }}>
         <button
           onClick={() => setOpen(!open)}
@@ -1213,23 +1310,24 @@ function CandidateCard({ c, saved, toggleSave, onOpen }) {
               <Pill tone={c.party === "Democratic" ? "a" : "b"}>{c.party}</Pill>
               {c.incumbent && <Pill>Incumbent</Pill>}
             </span>
+            <MatchChips name={c.name} ids={candidateMatches(c, mine)} />
           </span>
-          <span style={{ fontSize: 18, fontWeight: 800, color: "#2F8F8A" }}>{open ? "\u25B2" : "\u25BC"}</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: "var(--river)" }}>{open ? "▲" : "▼"}</span>
         </button>
         <button
           onClick={() => toggleSave(c.name)}
           style={{ background: "none", border: "none", fontSize: 24, cursor: "pointer", lineHeight: 1, padding: "20px 18px 20px 8px" }}
           aria-label="Save candidate"
         >
-          {saved ? "\u2B50" : "\u2606"}
+          {saved ? "⭐" : "☆"}
         </button>
       </div>
       {open && (
         <div style={{ padding: "0 18px 18px 20px" }}>
-          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55 }}>{c.headline}</div>
+          <div style={{ fontSize: 16, color: "var(--body-text)", lineHeight: 1.55 }}>{c.headline}</div>
           <button
             onClick={() => onOpen(c)}
-            style={{ background: "none", border: "none", padding: 0, marginTop: 12, fontSize: 13.5, fontWeight: 700, color: "#2F8F8A", cursor: "pointer" }}
+            style={{ background: "none", border: "none", padding: 0, marginTop: 12, fontSize: 16, fontWeight: 700, color: "var(--river)", cursor: "pointer" }}
           >
             View full positions →
           </button>
@@ -1303,10 +1401,11 @@ const MEASURES = [
 ];
 
 function MeasureCard({ m }) {
+  const mine = React.useContext(IssuesContext);
   // Details stay hidden until the reader taps the measure's name.
   const [open, setOpen] = useState(false);
   return (
-    <Card accent="#2F8F8A" style={{ padding: 0 }}>
+    <Card accent="var(--river)" style={{ padding: 0 }}>
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
@@ -1314,29 +1413,30 @@ function MeasureCard({ m }) {
       >
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 24, lineHeight: 1.1 }}>{m.name}</span>
-          <span style={{ display: "block", fontSize: 14, color: "#4E5A6C", marginTop: 4, lineHeight: 1.35 }}>{m.short}</span>
+          <span style={{ display: "block", fontSize: 16, color: "var(--body-text)", marginTop: 4, lineHeight: 1.35 }}>{m.short}</span>
+          <MatchChips ids={(MEASURE_TAGS[m.id] || []).filter((id) => mine.includes(id))} />
         </span>
-        <span style={{ fontSize: 18, fontWeight: 800, color: "#2F8F8A" }}>{open ? "▲" : "▼"}</span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: "var(--river)" }}>{open ? "▲" : "▼"}</span>
       </button>
       {open && (
         <div style={{ padding: "0 18px 18px 20px" }}>
-          <div style={{ fontSize: 11.5, fontWeight: 700, color: "#8A93A3", marginBottom: 8 }}>{m.kind}</div>
-          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 14 }}>{m.what}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--mist)", marginBottom: 8 }}>{m.kind}</div>
+          <div style={{ fontSize: 16, color: "var(--body-text)", lineHeight: 1.55, marginBottom: 14 }}>{m.what}</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
-            <div style={{ flex: "1 1 160px", minWidth: 0, background: "#EAF5EE", borderRadius: 14, padding: "12px 14px" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#3E8F63", letterSpacing: 0.5, marginBottom: 4 }}>A YES VOTE</div>
-              <div style={{ fontSize: 13.5, color: "#22314A", lineHeight: 1.45 }}>{m.yes}</div>
+            <div style={{ flex: "1 1 160px", minWidth: 0, background: "var(--support-bg)", borderRadius: 14, padding: "12px 14px" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--sprout)", letterSpacing: 0.5, marginBottom: 4 }}>A YES VOTE</div>
+              <div style={{ fontSize: 16, color: "var(--ink)", lineHeight: 1.45 }}>{m.yes}</div>
             </div>
-            <div style={{ flex: "1 1 160px", minWidth: 0, background: "#FBEBE7", borderRadius: 14, padding: "12px 14px" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#D2593F", letterSpacing: 0.5, marginBottom: 4 }}>A NO VOTE</div>
-              <div style={{ fontSize: 13.5, color: "#22314A", lineHeight: 1.45 }}>{m.no}</div>
+            <div style={{ flex: "1 1 160px", minWidth: 0, background: "var(--oppose-bg)", borderRadius: 14, padding: "12px 14px" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--ember)", letterSpacing: 0.5, marginBottom: 4 }}>A NO VOTE</div>
+              <div style={{ fontSize: 16, color: "var(--ink)", lineHeight: 1.45 }}>{m.no}</div>
             </div>
           </div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#8A93A3", letterSpacing: 0.5, marginBottom: 4 }}>ARGUMENT FOR</div>
-          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 12 }}>{m.for}</div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: "#8A93A3", letterSpacing: 0.5, marginBottom: 4 }}>ARGUMENT AGAINST</div>
-          <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.5, marginBottom: 14 }}>{m.against}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#22314A", background: "#F1ECDF", borderRadius: 12, padding: "10px 12px" }}>{m.result}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--mist)", letterSpacing: 0.5, marginBottom: 4 }}>ARGUMENT FOR</div>
+          <div style={{ fontSize: 16, color: "var(--body-text)", lineHeight: 1.5, marginBottom: 12 }}>{m.for}</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--mist)", letterSpacing: 0.5, marginBottom: 4 }}>ARGUMENT AGAINST</div>
+          <div style={{ fontSize: 16, color: "var(--body-text)", lineHeight: 1.5, marginBottom: 14 }}>{m.against}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)", background: "var(--pill-neutral-bg)", borderRadius: 12, padding: "10px 12px" }}>{m.result}</div>
         </div>
       )}
     </Card>
@@ -1347,10 +1447,8 @@ function MeasuresScreen() {
   const groups = ["Statewide", "Jackson County"];
   return (
     <div>
-      <div style={{ fontSize: 13.5, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 16 }}>
-        These were the yes-or-no questions on the November 3, 2026 ballot. Tap one to see what a
-        yes or no vote meant and the main arguments on each side. Results are unofficial; confirm
-        final numbers with the Missouri Secretary of State.
+      <div style={{ fontSize: 16, color: "#4E5A6C", lineHeight: 1.55, marginBottom: 16 }}>
+        Tap a question to see what a yes or no vote meant. Results are unofficial.
       </div>
       {groups.map((g) => (
         <div key={g} style={{ marginBottom: 12 }}>
@@ -1360,7 +1458,7 @@ function MeasuresScreen() {
           ))}
         </div>
       ))}
-      <div style={{ fontSize: 11.5, color: "#8A93A3", lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: "#8A93A3", lineHeight: 1.5 }}>
         Sources: Missouri Secretary of State certified ballot list, Ballotpedia, The Beacon, and two
         voter guides with stated viewpoints (Missouri Republican Party; Kansas City Defender).
       </div>
@@ -1368,166 +1466,209 @@ function MeasuresScreen() {
   );
 }
 
-function PositionList({ title, items, tone }) {
-  const color = tone === "for" ? "#3E8F63" : "#D2593F";
-  const bg = tone === "for" ? "#EAF5EE" : "#FBEBE7";
+function HomeButton({ icon, title, sub, color, onClick }) {
   return (
-    <div
-      style={{
-        marginBottom: 14,
-        background: bg,
-        borderRadius: 16,
-        padding: "14px 16px",
-      }}
+    <button
+      onClick={onClick}
+      style={{ width: "100%", display: "flex", alignItems: "center", gap: 16, padding: "22px 20px", marginBottom: 14, borderRadius: 24, border: "none", background: "var(--card-bg)", color: "var(--ink)", cursor: "pointer", textAlign: "left", boxShadow: "0 2px 10px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)", minHeight: 104 }}
     >
-      <div style={{ fontSize: 12, fontWeight: 800, color, letterSpacing: 0.5, marginBottom: 8 }}>
-        {title}
+      <span style={{ width: 60, height: 60, minWidth: 60, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30 }}>{icon}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 25, lineHeight: 1.1 }}>{title}</span>
+        <span style={{ display: "block", fontSize: 16, color: "var(--body-text)", marginTop: 5, lineHeight: 1.35 }}>{sub}</span>
+      </span>
+      <span style={{ fontSize: 26, fontWeight: 700, color: "var(--river)" }}>{"›"}</span>
+    </button>
+  );
+}
+
+const ISSUES = [
+  { id: "taxes", label: "Taxes and property assessments", icon: "\u{1F3E0}" },
+  { id: "schools", label: "Schools and education", icon: "\u{1F393}" },
+  { id: "safety", label: "Crime and public safety", icon: "\u{1F6A8}" },
+  { id: "health", label: "Health care", icon: "\u{1FA7A}" },
+  { id: "housing", label: "Housing costs", icon: "\u{1F511}" },
+  { id: "jobs", label: "Jobs and wages", icon: "\u{1F4BC}" },
+  { id: "roads", label: "Roads, transit and infrastructure", icon: "\u{1F6E3}️" },
+  { id: "environment", label: "Environment and clean water", icon: "\u{1F333}" },
+  { id: "abortion", label: "Abortion policy", icon: "⚕️" },
+  { id: "guns", label: "Gun laws", icon: "⚖️" },
+];
+const MAX_ISSUES = 5;
+const SETUP_KEY = "showme-setup-v1";
+
+function readSetup() {
+  try {
+    const raw = localStorage.getItem(SETUP_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function writeSetup(v) {
+  try { localStorage.setItem(SETUP_KEY, JSON.stringify(v)); } catch (e) {}
+}
+
+function IntroScreen({ initial, onDone }) {
+  const [picked, setPicked] = useState(initial ? initial.issues : []);
+  const toggle = (id) =>
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= MAX_ISSUES ? p : [...p, id]));
+  const full = picked.length >= MAX_ISSUES;
+  return (
+    <div>
+      <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 30, lineHeight: 1.15, marginBottom: 6 }}>
+        What matters most to you?
       </div>
-      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, lineHeight: 1.65, color: "#33414F" }}>
-        {items.map((it, i) => (
-          <li key={i}>{it}</li>
-        ))}
+      <div style={{ fontSize: 17, color: "var(--body-text)", lineHeight: 1.45, marginBottom: 6 }}>
+        Pick up to {MAX_ISSUES}. You can change this later.
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--river)", marginBottom: 16 }}>
+        {picked.length} of {MAX_ISSUES} picked
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+        {ISSUES.map((it) => {
+          const on = picked.includes(it.id);
+          const locked = full && !on;
+          return (
+            <button
+              key={it.id}
+              onClick={() => toggle(it.id)}
+              aria-pressed={on}
+              style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", minHeight: 64, padding: "12px 16px", borderRadius: 18, border: "3px solid " + (on ? "var(--river)" : "transparent"), background: on ? "var(--pill-b-bg)" : "var(--card-bg)", color: "var(--ink)", cursor: locked ? "default" : "pointer", opacity: locked ? 0.5 : 1, textAlign: "left", fontSize: 18, fontWeight: 700, boxShadow: "0 1px 6px rgba(0,0,0,0.08)" }}
+            >
+              <span style={{ fontSize: 26, width: 34, textAlign: "center" }}>{it.icon}</span>
+              <span style={{ flex: 1, minWidth: 0, lineHeight: 1.2 }}>{it.label}</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: "var(--river)" }}>{on ? "✓" : ""}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 15, color: "var(--body-text)", lineHeight: 1.5, background: "var(--pill-neutral-bg)", borderRadius: 16, padding: "14px 16px", marginBottom: 16 }}>
+        We count your picks anonymously to see what voters care about. We never store your name, address or contact info.
+      </div>
+      <button
+        onClick={() => onDone(picked, true)}
+        disabled={picked.length === 0}
+        style={{ width: "100%", minHeight: 58, borderRadius: 18, border: "none", background: "var(--river)", color: "#fff", fontSize: 18, fontWeight: 800, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0.5, marginBottom: 10 }}
+      >
+        Share anonymously and continue
+      </button>
+      <div style={{ fontSize: 13, color: "var(--mist)", textAlign: "center", marginTop: 6 }}>
+        Your picks are also saved on this device.
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ go, setup }) {
+  return (
+    <div>
+      <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 30, lineHeight: 1.15, marginBottom: 6 }}>
+        What do you want to do?
+      </div>
+      <div style={{ fontSize: 17, color: "var(--body-text)", lineHeight: 1.45, marginBottom: 22 }}>
+        Pick one. You can come back here any time.
+      </div>
+      <HomeButton icon={"\u{1F5F3}️"} title="Register to vote" sub="Four short steps" color="var(--pill-a-bg)" onClick={() => go("register")} />
+      <HomeButton icon={"\u{1F4CB}"} title="Who and what's on my ballot?" sub="Enter your address to see candidates and amendments" color="var(--pill-b-bg)" onClick={() => go("candidates")} />
+      <HomeButton icon={"\u{1F4DA}"} title="How voting works" sub="Federal, state and county" color="var(--support-bg)" onClick={() => go("learn")} />
+      <div style={{ marginTop: 8, fontSize: 16, color: "var(--body-text)", lineHeight: 1.5 }}>
+        {setup && setup.issues.length > 0 ? (
+          <span>
+            <strong>Your issues:</strong> {setup.issues.map((id) => (ISSUES.find((i) => i.id === id) || {}).label).join(", ")}.{" "}
+          </span>
+        ) : (
+          <span>You haven't picked any issues yet. </span>
+        )}
+        <button onClick={() => go("intro")} style={{ background: "none", border: "none", padding: 0, color: "var(--river)", fontSize: 16, fontWeight: 700, cursor: "pointer", textDecoration: "underline" }}>
+          {setup && setup.issues.length > 0 ? "Change" : "Pick issues"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PositionList({ title, items, tone, tags }) {
+  const mine = React.useContext(IssuesContext);
+  const color = tone === "for" ? "var(--sprout)" : "var(--ember)";
+  const bg = tone === "for" ? "var(--support-bg)" : "var(--oppose-bg)";
+  return (
+    <div style={{ marginBottom: 14, background: bg, borderRadius: 16, padding: "14px 16px" }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color, letterSpacing: 0.5, marginBottom: 8 }}>{title}</div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 16, lineHeight: 1.65, color: "var(--ink)" }}>
+        {items.map((it, i) => {
+          const hit = tags && tags[i] ? tags[i].filter((id) => mine.includes(id)) : [];
+          return (
+            <li key={i} style={hit.length ? { fontWeight: 700 } : undefined}>
+              {it}
+              {hit.length > 0 && <span style={{ color: "var(--pill-a-fg)", fontSize: 14 }}>{" \u2605 " + hit.map((id) => ISSUE_SHORT[id]).join(", ")}</span>}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
 }
 
 function CandidateDetail({ candidate: c, saved, onSave, onBack }) {
+  const mine = React.useContext(IssuesContext);
+  const stanceIds = candidateMatches(c, mine).filter((id) => STANCES[c.name] && STANCES[c.name][id]);
   return (
     <div>
-      <button
-        onClick={onBack}
-        style={{
-          background: "none",
-          border: "none",
-          color: "#2F8F8A",
-          fontWeight: 700,
-          fontSize: 13.5,
-          marginBottom: 14,
-          cursor: "pointer",
-          padding: 0,
-        }}
-      >
-        ← Back to candidates
-      </button>
-
-      <div
-        style={{
-          background: "linear-gradient(135deg, #22314A 0%, #2F8F8A 130%)",
-          borderRadius: 20,
-          padding: "20px",
-          color: "#FBF6EC",
-          marginBottom: 16,
-          boxShadow: "0 8px 20px rgba(34,49,74,0.18)",
-        }}
-      >
+      <button onClick={onBack} style={{ background: "none", border: "none", color: "var(--river)", fontWeight: 700, fontSize: 16, marginBottom: 14, cursor: "pointer", padding: 0 }}>← Back to candidates</button>
+      <div style={{ background: "linear-gradient(135deg, var(--ink) 0%, var(--river) 130%)", borderRadius: 20, padding: 20, color: "#FBF6EC", marginBottom: 16, boxShadow: "0 8px 20px rgba(0,0,0,0.25)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 23 }}>
-              {c.name}
-            </div>
-            <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
-              <span
-                style={{
-                  background: "rgba(255,255,255,0.18)",
-                  borderRadius: 999,
-                  padding: "3px 10px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                {c.party}
-              </span>
-              {c.incumbent && (
-                <span
-                  style={{
-                    background: "rgba(255,255,255,0.18)",
-                    borderRadius: 999,
-                    padding: "3px 10px",
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                >
-                  Incumbent
-                </span>
-              )}
+            <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 23 }}>{c.name}</div>
+            <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <span style={{ background: "rgba(255,255,255,0.18)", borderRadius: 999, padding: "3px 10px", fontSize: 14, fontWeight: 700 }}>{c.party}</span>
+              {c.incumbent && <span style={{ background: "rgba(255,255,255,0.18)", borderRadius: 999, padding: "3px 10px", fontSize: 14, fontWeight: 700 }}>Incumbent</span>}
             </div>
           </div>
-          <button
-            onClick={onSave}
-            style={{ background: "none", border: "none", fontSize: 26, cursor: "pointer" }}
-            aria-label="Save candidate"
-          >
-            {saved ? "⭐" : "☆"}
-          </button>
+          <button onClick={onSave} style={{ background: "none", border: "none", fontSize: 26, cursor: "pointer" }} aria-label="Save candidate">{saved ? "\u2B50" : "\u2606"}</button>
         </div>
-        <div style={{ fontSize: 14, marginTop: 12, opacity: 0.92 }}>{c.headline}</div>
+        <div style={{ fontSize: 16, marginTop: 12, opacity: 0.92 }}>{c.headline}</div>
       </div>
 
-      {c.supports && c.supports.length > 0 && (
-        <PositionList title="STATED SUPPORT" items={c.supports} tone="for" />
+      {stanceIds.length > 0 && (
+        <div style={{ background: "var(--pill-a-bg)", borderRadius: 16, padding: "14px 16px", marginBottom: 14 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "var(--pill-a-fg)", letterSpacing: 0.5, marginBottom: 8 }}>ON YOUR ISSUES</div>
+          {stanceIds.map((id) => {
+            const st = STANCES[c.name][id];
+            const col = st.dir === "lower" ? "var(--sprout)" : st.dir === "raise" ? "var(--ember)" : "var(--mist)";
+            return (
+              <div key={id} style={{ marginBottom: 6 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
+                  <span style={{ fontSize: 17, fontWeight: 800, color: "var(--ink)" }}>{ISSUE_SHORT[id]}</span>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: "#fff", background: col, borderRadius: 999, padding: "3px 11px" }}>{DIR_LABEL[st.dir]}</span>
+                </div>
+                <div style={{ fontSize: 16, color: "var(--ink)", lineHeight: 1.5 }}>{st.text}</div>
+              </div>
+            );
+          })}
+        </div>
       )}
-      {c.opposes && c.opposes.length > 0 && (
-        <PositionList title="STATED OPPOSITION" items={c.opposes} tone="against" />
-      )}
+      {c.supports && c.supports.length > 0 && <PositionList title="STATED SUPPORT" items={c.supports} tone="for" tags={CANDIDATE_TAGS[c.name]} />}
+      {c.opposes && c.opposes.length > 0 && <PositionList title="STATED OPPOSITION" items={c.opposes} tone="against" />}
       {(!c.supports || c.supports.length === 0) && (!c.opposes || c.opposes.length === 0) && (
-        <div
-          style={{
-            fontSize: 12.5,
-            color: "#8A93A3",
-            background: "#F1ECDF",
-            borderRadius: 14,
-            padding: "12px 14px",
-            marginBottom: 14,
-          }}
-        >
+        <div style={{ fontSize: 14, color: "var(--mist)", background: "var(--pill-neutral-bg)", borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
           No specific stated positions found yet for this candidate — see the note below.
         </div>
       )}
 
-      <div
-        style={{
-          background: "#FFFFFF",
-          border: "1px solid #E9E0CC",
-          borderRadius: 16,
-          padding: 16,
-          marginTop: 4,
-          boxShadow: "0 1px 3px rgba(34,49,74,0.05)",
-        }}
-      >
-        <div style={{ fontSize: 12, fontWeight: 800, color: "#E8A93B", marginBottom: 6 }}>
-          HOW THIS COULD AFFECT YOU
-        </div>
-        <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#33414F" }}>{c.impact}</div>
+      <div style={{ background: "var(--card-bg)", border: "1px solid var(--input-border)", borderRadius: 16, padding: 16, marginTop: 4 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "var(--sun)", marginBottom: 6 }}>HOW THIS COULD AFFECT YOU</div>
+        <div style={{ fontSize: 16, lineHeight: 1.6, color: "var(--ink)" }}>{c.impact}</div>
       </div>
 
       {c.website && (
-        <a
-          href={c.website}
-          target="_blank"
-          rel="noreferrer"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            background: "#22314A",
-            color: "#FBF6EC",
-            fontWeight: 700,
-            fontSize: 14,
-            padding: "13px 16px",
-            borderRadius: 14,
-            marginTop: 14,
-          }}
-        >
+        <a href={c.website} target="_blank" rel="noreferrer" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "var(--ink)", color: "#FBF6EC", fontWeight: 700, fontSize: 16, padding: "13px 16px", borderRadius: 14, marginTop: 14 }}>
           Visit {c.name.split(" ")[0]}'s campaign website ↗
         </a>
       )}
 
-      <div style={{ fontSize: 11.5, color: "#A9B0BE", marginTop: 14, lineHeight: 1.5 }}>
-        Positions are summarized from public campaign statements and local election reporting
-        (Aug 2026) and simplified for readability. Always check a candidate's official site for
-        their full, current platform before voting.
+      <div style={{ fontSize: 13, color: "var(--mist)", marginTop: 14, lineHeight: 1.5 }}>
+        Positions are summarized from public campaign statements and local election reporting (Oct 2026) and simplified for readability. Always check a candidate's official site for their full, current platform before voting.
       </div>
     </div>
   );
@@ -1544,7 +1685,7 @@ function SavedScreen({ races, saved, onOpen, toggleSave }) {
         <div style={{ fontSize: 15, fontWeight: 600, color: "#6B7789" }}>
           No candidates saved yet
         </div>
-        <div style={{ fontSize: 12.5, marginTop: 4 }}>
+        <div style={{ fontSize: 14, marginTop: 4 }}>
           Tap the star on any candidate to compare them here.
         </div>
       </div>
@@ -1562,7 +1703,7 @@ function SavedScreen({ races, saved, onOpen, toggleSave }) {
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 17 }}>
+              <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 19 }}>
                 {c.name}
               </div>
               <div style={{ marginTop: 6 }}>
